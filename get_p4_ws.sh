@@ -1,7 +1,7 @@
 #!/usr/bin/env sh 
 
 Branch=$1
-Host=`hostname | sed 's/\.infinera\.com//g'`
+Host=`hostname | sed 's/\.infinera\.com//g'i | tr '[A-Z]' '[a-z]'`
 Client=CLV_${Branch}_${Host}
 templatefile=templates
 tfile=""
