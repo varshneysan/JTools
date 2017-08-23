@@ -1,6 +1,5 @@
 main                            bld_main_sv-mvbld-04
 cx-main                         bld_cx-main_sv-intgbld-01
-sb-r18.0-SecurityFeature        bld_sb-r18.0-SF_in-mvlb42
 pvt-otm1200                     bld_pvt-otm1200_in-mvlb42
 r17.0.x                         bld_r17.0.x_sv-mvbld-04
 r17.1.x                         bld_r17.1.x_sv-mvbld-04
