@@ -39,6 +39,9 @@ my $conditionValue;
 my $serverToLock;
 my $serverStatus;
 my $lockAction;
+my $setclstate;
+my $refcl;
+my $refstate;
 
 # Process inputs from user
 GetOptions(
@@ -53,14 +56,24 @@ GetOptions(
    'field=s' => \$dbfield,
    'set=s' => \$dbfieldvalue,
    'conditionExpr=s' => \$conditionExpr,
-   'conditionValue=s' => \$conditionValue
+   'conditionValue=s' => \$conditionValue,
+   'setclstate' => \$setclstate,
+   'changelist=i' => \$refcl,
+   'state=s' => \$refstate
+   
   ) or die "Invalid options passed to $0\n";
 
-die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction;
+die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate;
 
 if ($allocBm and $clfetch)
 {
  die "$0 requires either --allocBuildMachine or --fetchChangelist commandline user input.Both options are not permitted!!! \n";
+}
+
+if ($setclstate)
+{
+	&setClState($refcl,$refstate);
+
 }
 
 if ($allocBm)
@@ -177,16 +190,22 @@ sub allocBuildMachine {
 sub getServersFromPool {
 
 my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-my $query = $dbh->prepare("SELECT server_name FROM test2.server where is_good='YES' and is_used='NO'");
+my $query = $dbh->prepare("SELECT server_name FROM sanity_check.known_servers where is_good='YES' and is_used='NO'");
 $query->execute() or die $DBI::errstr;
 #my $ary_ref = $dbh->selectcol_arrayref("SELECT server_name FROM test2.server where is_good='YES'");
 my $ary_ref = $dbh->selectcol_arrayref("SELECT server_name from sanity_check.known_servers where is_good='YES' and is_used='NO'");
 $query->finish();
 $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
-return $ary_ref;
-
+if (not defined $ary_ref )
+{
+	print "None";
+	exit;
 }
-
+else 
+{
+	return $ary_ref;
+}
+}
 # Get changelists for osubmit job
 
 sub getNewOsubmitCandidate {
@@ -195,7 +214,7 @@ sub getNewOsubmitCandidate {
 	my @branches;
 	my $isDev;
         my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.cl_details where build_status='NEW' and Branch='//swdepot/main/' or Branch='//swdepot/r17.1.x/' order by idEntries limit 1");
+	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.cl_details where build_status='READY' and Branch='//swdepot/main/' or Branch='//swdepot/r17.1.x/' order by idEntries limit 1");
         $query->execute() or die $DBI::errstr;
         my @row = $query->fetchrow_array;
         $query->finish();
@@ -298,6 +317,17 @@ sub lockUnLockBuildBox {
 }
 
 
+sub setClState {
+
+        my $cl = shift;
+	my $st = shift;
+        my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+        my $query = $dbh->prepare("UPDATE sanity_check.cl_details SET Build_Status='$st' where Shelved_Change_No='$cl'");
+        $query->execute() or die $DBI::errstr;
+        $query->finish();
+        $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+
+}
 
 
 
