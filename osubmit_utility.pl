@@ -214,7 +214,7 @@ sub getNewOsubmitCandidate {
 	my @branches;
 	my $isDev;
         my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.cl_details where build_status='READY' and Branch='//swdepot/main/' or Branch='//swdepot/r17.1.x/' order by idEntries limit 1");
+	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.cl_details where build_status='READY' and Branch='//swdepot/main/' order by idEntries limit 1");
         $query->execute() or die $DBI::errstr;
         my @row = $query->fetchrow_array;
         $query->finish();
