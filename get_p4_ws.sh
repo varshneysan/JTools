@@ -59,7 +59,7 @@ else
       RootFolder="/bld_home/bangbuild/CLVERI/workspace/"
    fi
    if [ ! -d $RootFolder ]; then
-      mkdir $RootFolder
+      mkdir -p $RootFolder
    fi
    cd $RootFolder
    p4 client -t $tfile -o ${Client} | p4 client -i
