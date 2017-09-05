@@ -214,7 +214,7 @@ sub getNewOsubmitCandidate {
 	my @branches;
 	my $isDev;
         my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.cl_details where build_status='READY' and Branch='//swdepot/main/' order by idEntries limit 1");
+	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.fresh_entries where Integration_Status='READY' and Branch='//swdepot/main/' order by idFresh_Entries limit 1");
         $query->execute() or die $DBI::errstr;
         my @row = $query->fetchrow_array;
         $query->finish();
@@ -226,7 +226,7 @@ sub getNewOsubmitCandidate {
             else
             {
                 push @changelists,$_;
-		$query = $dbh->prepare("SELECT Branch FROM sanity_check.cl_details where Shelved_Change_No='$_'");
+		$query = $dbh->prepare("SELECT Branch FROM sanity_check.fresh_entries where Shelved_Change_No='$_'");
 		$query->execute() or die $DBI::errstr;
 		my $br = $query->fetchrow_array;
 		$query->finish();		
@@ -234,7 +234,7 @@ sub getNewOsubmitCandidate {
 		$osubmitflagQuery->execute() or die $DBI::errstr;
                 my $flag = $osubmitflagQuery->fetchrow_array;
 		$osubmitflagQuery->finish();
-   		$flag="true";
+		$flag="true";
 		if ($flag eq "true")
 		{
 			$clBranchMap{$_}=$br;
@@ -322,7 +322,7 @@ sub setClState {
         my $cl = shift;
 	my $st = shift;
         my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-        my $query = $dbh->prepare("UPDATE sanity_check.cl_details SET Build_Status='$st' where Shelved_Change_No='$cl'");
+        my $query = $dbh->prepare("UPDATE sanity_check.fresh_entries SET Integration_Status='$st' where Shelved_Change_No='$cl'");
         $query->execute() or die $DBI::errstr;
         $query->finish();
         $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
