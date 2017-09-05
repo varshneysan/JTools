@@ -1,12 +1,17 @@
 #!/usr/bin/perl
 
-use Net::SSH::Perl;
 use List::UtilsBy qw(min_by);
 use strict;
 use Cwd;
 use DBI;
 use Getopt::Long;
 
+my $isNetSshInstalled;
+BEGIN {
+    unless (eval "use Net::SSH::Perl") {
+        $isNetSshInstalled="YES";
+    }
+}
 
 # Database details
 my $driver = "mysql";
