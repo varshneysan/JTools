@@ -47,6 +47,8 @@ my $lockAction;
 my $setclstate;
 my $refcl;
 my $refstate;
+my $getClOwner;
+my $p4cl;
 
 # Process inputs from user
 GetOptions(
@@ -64,11 +66,12 @@ GetOptions(
    'conditionValue=s' => \$conditionValue,
    'setclstate' => \$setclstate,
    'changelist=i' => \$refcl,
-   'state=s' => \$refstate
-   
+   'state=s' => \$refstate,
+   'getClOwner' => \$getClOwner,
+   'p4cl=i' => \$p4cl
   ) or die "Invalid options passed to $0\n";
 
-die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate;
+die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner;
 
 if ($allocBm and $clfetch)
 {
@@ -104,6 +107,11 @@ if ($updateDb)
     die "$0 requires database, database table , field and value .\n" unless $dbschema or $dbtable or $dbfield or $dbfieldvalue;
     &updateDbField;
     exit;
+}
+
+if ($getClOwner)
+{
+    &getClOwner($p4cl);
 }
 
 sub allocBuildMachine {
@@ -325,7 +333,7 @@ sub lockUnLockBuildBox {
 sub setClState {
 
         my $cl = shift;
-	my $st = shift;
+        my $st = shift;
         my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
         my $query = $dbh->prepare("UPDATE sanity_check.fresh_entries SET Integration_Status='$st' where Shelved_Change_No='$cl'");
         $query->execute() or die $DBI::errstr;
@@ -334,7 +342,24 @@ sub setClState {
 
 }
 
-
+sub getClOwner {
+    my $cl = shift;
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $query = $dbh->prepare("SELECT Developer FROM sanity_check.fresh_entries where Shelved_Change_No = '$cl'");
+    $query->execute() or die $DBI::errstr;
+    my $dev = $query->fetchrow_array;
+    $query->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+    if (not defined($dev) or ($dev eq "")){
+        print "None";
+        exit;
+    }
+    else
+    {
+        print "$dev\@infinera\.com";
+        exit;
+    }
+}
 
 
 
