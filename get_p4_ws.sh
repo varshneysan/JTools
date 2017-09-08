@@ -1,8 +1,7 @@
 #!/usr/bin/env sh 
 
 Branch=$1
-#Host=`hostname | sed 's/\.infinera\.com//g'`
-Host="IN-MVLB14"
+Host=`hostname | sed 's/\.infinera\.com//g'`
 Client=CLV_${Branch}_${Host}
 templatefile=templates
 tfile=""
