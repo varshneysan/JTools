@@ -1,7 +1,8 @@
 #!/usr/bin/env sh 
 
 Branch=$1
-Host=`hostname | sed 's/\.infinera\.com//g'`
+#Host=`hostname | sed 's/\.infinera\.com//g'`
+Host="IN-MVLB14"
 Client=CLV_${Branch}_${Host}
 templatefile=templates
 tfile=""
@@ -53,7 +54,7 @@ rm -f tempfile.txt
 if [ $bfound -eq 1 ]; then
    echo "Info: Client $Client is already here."
 else
-   if [[ $Host =~ in-* ]]; then
+   if [[ $Host =~ IN-* ]] || [[ $Host =~ in-* ]]; then
       RootFolder="/home/bangbuild/CLVERI/workspace/"
    elif [[ $Host =~ sv-* ]]; then
       RootFolder="/bld_home/bangbuild/CLVERI/workspace/"
