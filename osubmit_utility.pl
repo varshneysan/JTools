@@ -372,7 +372,7 @@ sub getClOwner {
         exit;
     }
 }
-
+# Reject CL for compilation failure scenarion
 sub  rejectCl {
 
     my $cl = shift;
