@@ -1,6 +1,8 @@
 env.Host="${JOB_NAME}"
 env.P4CLIENT="CLV_${Branch}_${Host}"
 env.CCMAIL="svarshney@infinera.com,mkrishan@infinera.com,DUpadhaye@infinera.com,jili@infinera.com,mkrishna@infinera.com"
+CL=ChangeList.split(",")
+env.mcl=CL[0]
 
 env.debug=""
 // Keep debug="" or debug="true to switch it on"
@@ -74,29 +76,29 @@ node ("${Host}"){
 			echo "All CL to unshelve"
 			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} unshelve -s $cl; done'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} update $DepotPath/... '
-			sh 'for f in `p4 -u bangbuild -P ${P4PASSWD} opened | grep 2dParty | awk -F"#" "{print $1}"`; do p4 -u bangbuild -P ${P4PASSWD} update $f; done'
+			sh 'for f in `p4 -u bangbuild -P ${P4PASSWD} opened | grep 2dParty | cut -d "#" -f1`; do p4 -u bangbuild -P ${P4PASSWD} update $f; done'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} resolve -am'
-			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
+			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
+			
 		} 
 	} catch (Exception e) {
 	    mail (to: "${mailer}",    
 			cc: "${CCMAIL}",
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
-			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls referr ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
+			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls refer ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
 		currentBuild.description = "CLs : ${ChangeList}"
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'CONFLICTING')], wait: false
 		sh 'exit 1'
 	}
 	
-
-    
-    try { 
+	try { 
       stage('Compilation') {
         
         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'INCOMPILATION')], wait: false
-        
+        sh 'sed -i s/.[^.*]*$/."$mcl"/g  "${WPath}/${Branch}/src_ne/latest.txt"'
         sh 'cd ${WPath}/${Branch}/etc2.0 && HOSTNAME=$Host ./BuildManage.sh -b ALL > ${LOGS}/BuildLog.txt 2>&1'
         sh 'lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l` && errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l` && if [[ -d "${WPath}/${Branch}/tar_ne" &&  $errc -eq 0 ]]; then  echo "Build Artifacts Generated" && exit 0; else mkdir ${LOGSERR} && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/; if [ $lcount -gt 0 ]; then cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; else cp ${LOGS}/BuildLog.txt ${LOGSERR}/BuildLog.log; fi; exit 1; fi'
       }   
@@ -122,10 +124,11 @@ node ("${Host}"){
     
     
     stage ('Sanity') {
+		def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
         if (env.Host ==~ /sv-.*/) {
 			sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-			sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/'
-			build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${BUILD_NUMBER}")], wait: false
+			sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+			build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
         }
     }   
     
