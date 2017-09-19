@@ -65,6 +65,8 @@ class InfnSSH(object):
             if len(rl) > 0:
                 cmd_output += channel.recv(1024)
         print cmd_output
+        time.sleep(5)
+        #print cmd_output
         return cmd_output
 
 
@@ -127,6 +129,15 @@ def startDockerSanity(options):
     print "Selected setup %s for test" %setup_undertest        
     
     current_setup   = []
+
+    #Before spinning a new container, delete the containers of 2 days old. We shall keep only 2 days container
+    del_cmd = '''docker ps --filter "status=exited" | grep '2 days ago' | awk '{print $1}' | xargs --no-run-if-empty docker rm'''
+    serverObj.sendcmd(del_cmd)
+    time.sleep(5)
+    
+    stime     = datetime.datetime.now()
+    starttime = stime.strftime("%Y-%m-%d-%H-%M-%S")
+
     #Chose the first setup from available_setups and schedule a test
     for eachtest in preisubmittests:
         setup_name = eachtest %setup_undertest
@@ -136,6 +147,9 @@ def startDockerSanity(options):
                       -v /etc/localtime:/etc/localtime:ro --name %s  10.100.204.107:5000/infnsanity -s %s -b %s -c %s -r %s -l %s -v %s -u %s -p %s -e %s' \
                       %(cntrname,setup_name,options.build_type,options.changelists,options.release,options.buildpath,options.ftpsvr,options.ftpuser,\
                         options.ftppass,options.email)
+        -v /etc/localtime:/etc/localtime:ro --name %s_%s --stop-timeout=3600 10.100.204.107:5000/infnsanity -s %s -b %s -c %s -r %s -l %s -v %s -u %s -p %s -e %s' \
+        %(cntrname,starttime,setup_name,options.build_type,options.changelists,options.release,options.buildpath,options.ftpsvr,options.ftpuser,\
+          options.ftppass,options.email)
         print run_cmd
         #Execute the docker run command
         serverObj.sendcmd(run_cmd)
@@ -159,6 +173,7 @@ def startDockerSanity(options):
             dockerrunningcmd = "docker inspect -f '{{.State.Running}}' %s" %cntrname
             dockerrunning = serverObj.sendcmd(dockerrunningcmd).strip()
             #print "(%s)" %dockerrunning
+            print "(%s)" %dockerrunning
             if 'true' in dockerrunning:
                 print "docker %s still running" %cntrname
                 continue
@@ -167,6 +182,7 @@ def startDockerSanity(options):
                 #Check the exit code                
                 eccmd = "docker inspect -f '{{.State.ExitCode}}' %s" %cntrname
                 #ec    = serverObj.sendcmd(eccmd).strip()
+                ec    = serverObj.sendcmd(eccmd).strip()
                 print "((%s))" %ec                
                 if '0' in ec:
                     verdict = 'PASS'

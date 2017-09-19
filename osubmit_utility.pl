@@ -49,6 +49,8 @@ my $refcl;
 my $refstate;
 my $getClOwner;
 my $p4cl;
+my $rejectChangelist;
+my $rejectionReason;
 
 # Process inputs from user
 GetOptions(
@@ -68,10 +70,12 @@ GetOptions(
    'changelist=i' => \$refcl,
    'state=s' => \$refstate,
    'getClOwner' => \$getClOwner,
-   'p4cl=i' => \$p4cl
+   'p4cl=i' => \$p4cl,
+   'rejectChangelist' => \$rejectChangelist,
+   'reason=s' => \$rejectionReason
   ) or die "Invalid options passed to $0\n";
 
-die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner;
+die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner or $rejectChangelist;
 
 if ($allocBm and $clfetch)
 {
@@ -112,7 +116,15 @@ if ($updateDb)
 if ($getClOwner)
 {
     &getClOwner($p4cl);
+    exit;
 }
+
+if ($rejectChangelist)
+{
+    &rejectCl($p4cl,$rejectionReason);
+    exit; 
+}
+
 
 sub allocBuildMachine {
 
@@ -361,7 +373,22 @@ sub getClOwner {
     }
 }
 
+sub  rejectCl {
 
+    my $cl = shift;
+    my $reason = shift;
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $query = $dbh->prepare("insert into sanity_check.osubmit_failed_history (Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number) select Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number from sanity_check.fresh_entries where Shelved_Change_No = '$cl'");
+    $query->execute() or die $DBI::errstr;
+    $query->finish();
+    $query = $dbh->prepare("UPDATE sanity_check.osubmit_failed_history SET Build_Status='$reason' where Shelved_Change_No='$cl'");
+    $query->execute() or die $DBI::errstr;
+    $query->finish();
+    $query = $dbh->prepare("DELETE FROM sanity_check.fresh_entries WHERE Shelved_Change_No='$cl'");
+    $query->execute() or die $DBI::errstr;
+    $query->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+}
 
 
 
