@@ -25,7 +25,7 @@ my $password = unpack(chr(ord("a") + 19 + print ""),'$<F]O=```');
 
 # Server parameters
 my %serverParam;
-my $referenceDiskSpace = 80;
+my $referenceDiskSpace = 90;
 my $referenceBmProcCount = 2;
 
 my $svpasswd = unpack(chr(ord("a") + 19 + print ""),',8G5I;&1E<D!I;F9N');
