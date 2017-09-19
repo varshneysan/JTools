@@ -23,21 +23,22 @@ node ("${Host}"){
 	}
 	if (env.debug) {
 		env.CCMAIL="svarshney@infinera.com"
+		env.mailer="svarshney@infinera.com"
 	}
-
-	
-	
-    try {
+	if (env.IsDev == 'Yes') {
+		env.DepotPath="//swdepot/dev/${Branch}"
+	} else {
+		env.DepotPath="//swdepot/${Branch}"
+	}
+		
+	try {
     stage ('Preparation')
     {
-       checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', noTags: true, reference: '', shallow: true]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '735466fc-bc83-4554-b2f8-00721c6c1928', url: 'git@sv-gitswarm-prd.infinera.com:svarshney/Tools.git']]])
-
+        checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', noTags: true, reference: '', shallow: true]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '735466fc-bc83-4554-b2f8-00721c6c1928', url: 'git@sv-gitswarm-prd.infinera.com:svarshney/Tools.git']]])
         sh 'sh get_p4_ws.sh ${Branch}'
         sh 'if [ -d ${LOGSERR} ]; then rm -rf ${LOGSERR}; fi'
         sh 'if [ ! -d ${LOGS} ]; then mkdir -p ${LOGS};fi;'
-        sh 'if [ "$IsDev" == "Yes" ]; then DepotPath="//swdepot/dev/${Branch}"; else DepotPath="//swdepot/${Branch}"; fi && \
-            echo "Synching Branch"; \
-			p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/etc2.0/... > ${LOGS}/IQNOS_Sync.log 2>&1'
+        sh 'p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/etc2.0/... > ${LOGS}/IQNOS_Sync.log 2>&1'
 		echo "INFO : P4CLIENT -  ${P4CLIENT}"
 		echo "INFO : LOGS - ${LOGS}"
 		echo "INFO : LOGSERR - ${LOGSERR}"
@@ -47,9 +48,7 @@ node ("${Host}"){
     {
 		parallel (
 		"IQNOS" : {
-		sh 'if [ "$IsDev" == "Yes" ]; then DepotPath="//swdepot/dev/${Branch}"; else DepotPath="//swdepot/${Branch}"; fi && \
-            echo "Synching Branch"; \
-			p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/... >> ${LOGS}/IQNOS_Sync.log 2>&1'
+		sh 'echo "Synching Branch" && p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/... >> ${LOGS}/IQNOS_Sync.log 2>&1'
 		},
 		"2dParty": {
 		sh 'echo "Synching 2dParty"; \
@@ -58,26 +57,6 @@ node ("${Host}"){
         }
 		)
     }
-    
-	try {
-		stage('UnShelving') {
-			echo "All CL to unshelve"
-			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} unshelve -s $cl; done'
-			sh 'p4 -u bangbuild -P ${P4PASSWD} update && p4 -u bangbuild -P ${P4PASSWD} resolve -am'
-			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
-			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
-    
-		} 
-	} catch (Exception e) {
-	    mail (to: "${mailer}",    
-			cc: "${CCMAIL}",
-			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
-			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls referr ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
-		currentBuild.description = "CLs : ${ChangeList}"
-		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
-	}
-	
     } catch (Exception e) {
         sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
         sh 'p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
@@ -89,6 +68,29 @@ node ("${Host}"){
 		currentBuild.description = "CLs : ${ChangeList}"
 		sh 'exit 1'
     }
+    
+	try {
+		stage('UnShelving') {
+			echo "All CL to unshelve"
+			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} unshelve -s $cl; done'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} update $DepotPath/... '
+			sh 'for f in `p4 -u bangbuild -P ${P4PASSWD} opened | grep 2dParty | awk -F"#" "{print $1}"`; do p4 -u bangbuild -P ${P4PASSWD} update $f; done'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} resolve -am'
+			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
+		} 
+	} catch (Exception e) {
+	    mail (to: "${mailer}",    
+			cc: "${CCMAIL}",
+			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
+			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls referr ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
+		currentBuild.description = "CLs : ${ChangeList}"
+		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		sh 'exit 1'
+	}
+	
+
     
     try { 
       stage('Compilation') {
@@ -110,8 +112,8 @@ node ("${Host}"){
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		
 		
-		build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'COMPILATION_FAILED')], wait: false
-        build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
+		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'COMPILATION_FAILED')], wait: false
+		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 		
 		currentBuild.description = "CLs : ${ChangeList}"
 		sh 'exit 1'
@@ -120,11 +122,11 @@ node ("${Host}"){
     
     
     stage ('Sanity') {
-        //build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'INSANITY')], wait: false
-        
-        echo: "Yet to Integrate"
-    
-        //sh 'for cl in `echo ${ChangeList} | tr "," " "`; do perl  osubmit_utility.pl --setclstate -changelist ${cl} --state INSANITY_FAILED'
+        if (env.Host ==~ /sv-.*/) {
+			sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+			sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/'
+			build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${BUILD_NUMBER}")], wait: false
+        }
     }   
     
     stage ('CleanUp WS') {
@@ -132,9 +134,8 @@ node ("${Host}"){
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		
 		sh 'find ${LOGS} -mtime +2 | xargs rm -rf'
-		
 		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
-        build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+
     }
     }
 	currentBuild.description = "CLs : ${ChangeList}"

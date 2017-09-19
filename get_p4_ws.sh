@@ -6,7 +6,7 @@ Client=CLV_${Branch}_${Host}
 templatefile=templates
 tfile=""
 bfound=0
-alias p4="/usr/bin/p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9"
+alias p4="p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9"
 echo "Info: Host Name is $Host"
 
 if [ ! -f $templatefile ]; then
