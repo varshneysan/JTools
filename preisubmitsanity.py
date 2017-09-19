@@ -19,6 +19,7 @@ import select
 import time
 import re
 import sys
+import datetime
 
 class InfnSSH(object):
     '''
@@ -64,7 +65,6 @@ class InfnSSH(object):
             rl, wl, xl = select.select([channel], [], [], 2)
             if len(rl) > 0:
                 cmd_output += channel.recv(1024)
-        print cmd_output
         time.sleep(5)
         #print cmd_output
         return cmd_output
@@ -144,9 +144,6 @@ def startDockerSanity(options):
         current_setup.append(setup_name)
         cntrname   = '%s_%s' %(setup_name,options.changelists)        
         run_cmd    = 'docker run --net host -d -v /home/infinera/utah-worker/:/home/infinera/utah-worker/ \
-                      -v /etc/localtime:/etc/localtime:ro --name %s  10.100.204.107:5000/infnsanity -s %s -b %s -c %s -r %s -l %s -v %s -u %s -p %s -e %s' \
-                      %(cntrname,setup_name,options.build_type,options.changelists,options.release,options.buildpath,options.ftpsvr,options.ftpuser,\
-                        options.ftppass,options.email)
         -v /etc/localtime:/etc/localtime:ro --name %s_%s --stop-timeout=3600 10.100.204.107:5000/infnsanity -s %s -b %s -c %s -r %s -l %s -v %s -u %s -p %s -e %s' \
         %(cntrname,starttime,setup_name,options.build_type,options.changelists,options.release,options.buildpath,options.ftpsvr,options.ftpuser,\
           options.ftppass,options.email)
@@ -172,7 +169,6 @@ def startDockerSanity(options):
             result_filename = '%s.txt' %cntrname
             dockerrunningcmd = "docker inspect -f '{{.State.Running}}' %s" %cntrname
             dockerrunning = serverObj.sendcmd(dockerrunningcmd).strip()
-            #print "(%s)" %dockerrunning
             print "(%s)" %dockerrunning
             if 'true' in dockerrunning:
                 print "docker %s still running" %cntrname
@@ -181,7 +177,6 @@ def startDockerSanity(options):
                 print "docker %s completed" %cntrname
                 #Check the exit code                
                 eccmd = "docker inspect -f '{{.State.ExitCode}}' %s" %cntrname
-                #ec    = serverObj.sendcmd(eccmd).strip()
                 ec    = serverObj.sendcmd(eccmd).strip()
                 print "((%s))" %ec                
                 if '0' in ec:
