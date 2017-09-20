@@ -11,7 +11,7 @@ p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9 print //swdepot/2dParty/etc2
 source $TMPFILE
 rm $TMPFILE
 
-touch ${Flist}
+touch ${Flist} ${TMPFILE}
 
 for cl in `echo $CLs | tr ',' ' '`
 do
