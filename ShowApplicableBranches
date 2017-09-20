@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+
+if [ $# -eq 0 ]; then
+    cat <<EOF
+Usage: ShowApplicableBranches <ChangeList #'s>
+or
+Usage: ShowApplicableBranches <ComponentName:ComponentVersion>
+
+e.g.
+ShowApplicableBranches 1670587
+ShowApplicableBranches pce:trunk
+EOF
+    exit 1
+fi
+
+# Source the component_root_paths.sh directoy from depot
+TMPFILE=$(mktemp)
+p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9 print //swdepot/2dParty/etc2.0/component_root_paths.sh | tail -n +2 > $TMPFILE
+source $TMPFILE
+rm $TMPFILE
+
+# Sort/process root paths from longest to shortest to resolve potential path ambiguity
+SORTED_COMPONENT_ROOT_PATHS=$(for K in "${!COMPONENT_ROOT_PATHS[@]}";
+    do
+    echo $K ${COMPONENT_ROOT_PATHS[$K]}
+    done |
+    awk '{ print length($2), $0 | "sort -rn" }' |
+    awk '{ print $2":"$3 }')
+
+function idBranchFromFilePath()
+{
+    FILENAME=$1
+    BRANCH=NotFound
+    if [[ $FILENAME == //swdepot/dev/* ]]; then
+        BRANCH=$(perl -e '$ARGV[0] =~ m{(//swdepot/dev/.*?/)}; print $1;' $FILENAME)
+    else
+        BRANCH=$(perl -e '$ARGV[0] =~ m{(//swdepot/.*?/)}; print $1;' $FILENAME)
+    fi
+    echo $BRANCH
+    return
+}
+
+function idComponentFromFilePath()
+{
+    FILENAME=$1
+
+    if [[ $FILENAME == //swdepot/2dParty/etc2.0* ]]; then
+        echo etc2.0
+        return
+    fi
+ 
+    for tuple in $SORTED_COMPONENT_ROOT_PATHS
+    do
+        ROOT_PATH=$(echo $tuple | cut -d: -f2)
+        if [[ $FILENAME == //swdepot/2dParty/${ROOT_PATH}* ]]; then
+            NAME=$(echo $tuple | cut -d: -f1)
+            echo $NAME
+            return
+        fi
+    done
+    echo NotFound
+}
+
+function idVersionFromFilePath()
+{
+    FILENAME=$1
+    COMPONENT=$2
+    perl -e '$rootpath = quotemeta($ARGV[1]); $ARGV[0] =~ m(//swdepot/2dParty/$rootpath/(.*?)/); print $1;' $FILENAME ${COMPONENT_ROOT_PATHS[$COMPONENT]}
+}
+
+# This can be changed to call Dishant's script directly i.e.,
+# $(perl show_iSubmit_branches.pl)
+function getiSubmitBranches()
+{
+    perl <<EOF
+use DBI;
+
+my \$dbh = DBI->connect(
+
+    "dbi:mysql:dbname=sanity_check;host=10.220.0.33;port=3306",
+    "root",
+    "root",
+    { RaiseError => 1 },
+) or die \$DBI::errstr;
+
+my \$sth = \$dbh->prepare("SELECT branch FROM allowed_branch where 2dParty_flag='true'");
+\$sth->execute();
+
+my \$row;
+while (\$row = \$sth->fetchrow_arrayref()) {
+    print "@\$row[0]\n";
+}
+
+\$sth->finish();
+\$dbh->disconnect();
+EOF
+}
+
+BRANCHES=$(getiSubmitBranches)
+
+function determineBranchApplicability()
+{
+    component=$(perl -e 'print quotemeta($ARGV[0])' $1)
+    version=$2
+    for branch in $BRANCHES
+    do
+        if [[ $component == "etc2.0" ]]; then
+            printf "%-20s used by branch %s\n" $component $branch
+        fi
+        manifest_entry=$(p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9 print ${branch}etc2.0/product.manifest | grep -E "^\s*(c|t|3d)[|a-z]*\s+${component}\s+")
+        if [[ $? == 0 ]]; then
+            manifest_version=$(echo $manifest_entry | awk '{print $3}')
+            if [[ $version == $manifest_version ]]; then
+                printf "%-20s %-10s used by branch %s\n" $1 $version $branch
+            fi
+        fi
+    done
+}
+
+function processCL()
+{
+    CHANGELIST=$1
+    FILES=$(p4 -u bangbuild -P BD09EFDFEEA034D237ADE61B256006A9 describe ${CHANGELIST} | perl -ne 'if ($_ =~ m/^\.\.\.\s+(.*)#\d+/){ print "$1\n" }')
+
+    #Optimize by only looking at unique file directories
+    FILE_DIRS=$(for file in $FILES
+                do
+                    echo $(dirname $file)
+                done | sort -u)
+
+    # Process all files to support multi-component changelist
+    for file in $FILE_DIRS
+    do
+        if [[ $file == //swdepot/2dParty/* ]]; then
+            component=$(idComponentFromFilePath $file)
+
+            if [[ $component == "NotFound" ]]; then
+                echo "Cannot identify 2dParty component for file $file"
+                exit 1
+            fi
+
+            version=$(idVersionFromFilePath $file $component)
+            determineBranchApplicability $component $version
+        else
+            branch=$(idBranchFromFilePath $file)
+            if [[ $branch == "NotFound" ]]; then
+                echo "Cannot identify branch for file $file"
+                exit 1
+            fi
+            #printf "Contains Files                  used by branch %s\n" $branch
+        fi
+    done |
+    sort -u
+}
+
+for arg in $@; do
+    isNumber='^[0-9]+$'
+    if [[ $arg =~ $isNumber ]]; then
+        processCL $arg
+    else
+        component=$(echo $arg | cut -d: -f1)
+        version=$(echo $arg | cut -d: -f2)
+        determineBranchApplicability $component $version
+    fi
+done |
+sort -u
