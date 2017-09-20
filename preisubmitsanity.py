@@ -142,7 +142,7 @@ def startDockerSanity(options):
     for eachtest in preisubmittests:
         setup_name = eachtest %setup_undertest
         current_setup.append(setup_name)
-        cntrname   = '%s_%s' %(setup_name,options.changelists)        
+        cntrname   = '%s_%s' %(setup_name,options.changelists)  
         run_cmd    = 'docker run --net host -d -v /home/infinera/utah-worker/:/home/infinera/utah-worker/ \
         -v /etc/localtime:/etc/localtime:ro --name %s_%s --stop-timeout=3600 10.100.204.107:5000/infnsanity -s %s -b %s -c %s -r %s -l %s -v %s -u %s -p %s -e %s' \
         %(cntrname,starttime,setup_name,options.build_type,options.changelists,options.release,options.buildpath,options.ftpsvr,options.ftpuser,\
@@ -231,5 +231,6 @@ if __name__ == '__main__':
     parser.add_option("-e", "--email", dest="email",
                       help="Email receipients")       
     (options, args) = parser.parse_args()
+    options.changelists = options.changelists.replace(',','_') #Replace , with _.This is for batched sanity with 2d party and src_ne
     startDockerSanity(options)    
       
