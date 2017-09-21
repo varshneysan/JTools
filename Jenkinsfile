@@ -76,7 +76,7 @@ node ("${Host}"){
 			echo "All CL to unshelve"
 			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} unshelve -s $cl; done'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} update $DepotPath/... '
-			sh 'for f in `p4 -u bangbuild -P ${P4PASSWD} opened | grep 2dParty | cut -d "#" -f1`; do p4 -u bangbuild -P ${P4PASSWD} update $f; done'
+			sh 'for f in `${WORKSPACE}/get_component_path.sh ${ChangeList}`; do if [ ${f} ]; then p4 -u bangbuild -P ${P4PASSWD} update ${f}...; fi;done'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} resolve -am'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
 			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
@@ -126,12 +126,12 @@ node ("${Host}"){
     stage ('Sanity') {
 		def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
         if (env.Host ==~ /sv-.*/) {
-		sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
-		build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
+			sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+			sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+			build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
         }
         if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
-        	build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+            build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
         }
     }   
     
