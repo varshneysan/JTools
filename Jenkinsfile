@@ -123,7 +123,7 @@ node ("${Host}"){
     }
     
     
-    stage ('Sanity') {
+    stage ('CopyArtifacts') {
 		def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
         if (env.Host ==~ /sv-.*/) {
 			sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
