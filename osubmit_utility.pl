@@ -315,7 +315,9 @@ sub getNewOsubmitCandidate {
     }
     else
     {
-        push @osubmitInput, $osubmitClRecord{"2dpAppBranch"};
+        my $brtype =  &getBranchType($osubmitClRecord{"2dpAppBranch"});
+        my $pattern = $osubmitClRecord{"2dpAppBranch"}.':'.$brtype;
+        push @osubmitInput, $pattern;
     }
 
     my $finaloutput=join ',', @osubmitInput;
