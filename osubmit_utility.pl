@@ -223,89 +223,111 @@ $query->finish();
 $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
 if (not defined $ary_ref )
 {
-	print "None";
-	exit;
+    print "None";
+    exit;
 }
-else 
+else
 {
-	return $ary_ref;
+    return $ary_ref;
 }
 }
 # Get changelists for osubmit job
 
 sub getNewOsubmitCandidate {
-	my %clBranchMap;
-        my @changelists;
-	my @branches;
-	my $isDev;
-        my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-	my $query = $dbh->prepare("SELECT Shelved_Change_No,Dependent_changes FROM sanity_check.fresh_entries where Integration_Status='READY' and Branch='//swdepot/main/' order by idFresh_Entries limit 1");
-        $query->execute() or die $DBI::errstr;
-        my @row = $query->fetchrow_array;
-        $query->finish();
-        foreach (@row)
-        {
-            if (not defined($_) or ($_ eq "")){
+    my %clBranchMap;
+    my %osubmitClRecord;
+    my $isDev;
+    my $shelvedChangeNo;
+    my $validinput="false";
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $query = $dbh->prepare("SELECT Shelved_Change_No FROM sanity_check.fresh_entries where Integration_Status='READY' order by idFresh_Entries");
+    $query->execute() or die $DBI::errstr;
+    while (my $record = $query->fetchrow_array())
+    {
+            $shelvedChangeNo=$record;
+            my $clbranch=&getBranchForCl($shelvedChangeNo);
+            my $osubmitflag=&isOsubmitEnabledBranch($clbranch);
+            #print "iSubmitted changelist is $shelvedChangeNo ,p4 branch is $clbranch and oSubmit flag is $osubmitflag \n";
+            if ($osubmitflag eq "true")
+            {
+                #print "Push CL $shelvedChangeNo to oSubmit build job \n";
+                $osubmitClRecord{"isubmittedcl"}= $shelvedChangeNo;
+                $clBranchMap{$shelvedChangeNo}=$clbranch;
+                $validinput="true";
+                last;
+            }
+            else {
                 next;
             }
-            else
-            {
-                push @changelists,$_;
-		$query = $dbh->prepare("SELECT Branch FROM sanity_check.fresh_entries where Shelved_Change_No='$_'");
-		$query->execute() or die $DBI::errstr;
-		my $br = $query->fetchrow_array;
-		$query->finish();		
-		my $osubmitflagQuery = $dbh->prepare("SELECT oSubmit_flag FROM sanity_check.allowed_branch where branch='$br'");
-		$osubmitflagQuery->execute() or die $DBI::errstr;
-                my $flag = $osubmitflagQuery->fetchrow_array;
-		$osubmitflagQuery->finish();
-		$flag="true";
-		if ($flag eq "true")
-		{
-			$clBranchMap{$_}=$br;
-		}
-		else {
-			next;
-		}
+    }
+    $query->finish();
+    if (not defined($shelvedChangeNo) or ($shelvedChangeNo eq "")){
+                print "None";
+                exit;
+    }
+    if ( $validinput eq "false"){
+         print "None";
+                exit;
+    }
 
-            }
-        }
-	$dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
-	my @osubmitInput;
-	foreach my $key ( keys %clBranchMap)
-	{
-		#print "For changelist $key branch is $clBranchMap{$key}\n";
-		my $refdepotpath=$clBranchMap{$key};
-		my $isDevBranch;
-		my $branchType;
-		if (( split '/', $refdepotpath )[3] eq "dev")
-		{
-			$isDevBranch ="YES";
-			$branchType ="DEV";
-			#print "$refdepotpath is a development branch\n";
-		}
-		else {	
-			$isDevBranch ="NO";
-			$branchType ="NONDEV";
-			 #print "$refdepotpath is NOT a development branch\n";
+    # we have got the CL now
+    $query = $dbh->prepare("SELECT Dependent_changes,2dParty_Applicable_Branch FROM sanity_check.fresh_entries where Shelved_Change_No='$shelvedChangeNo'");
+    $query->execute() or die $DBI::errstr;
+    my @osubmitinputcldep = $query->fetchrow_array();
+    $query->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+    if (not defined($osubmitinputcldep[0]) or ($osubmitinputcldep[0] eq "")){
+         $osubmitClRecord{"depChanges"}="NONE";
+    }
+    else {
+        $osubmitClRecord{"depChanges"}=$osubmitinputcldep[0];
+    }
+    if (not defined($osubmitinputcldep[1]) or ($osubmitinputcldep[1] eq "")){
+        $osubmitClRecord{"2dpAppBranch"}="NONE";
+    }
+    else {
+        $osubmitClRecord{"2dpAppBranch"}= $osubmitinputcldep[1];
+    }
 
-		}
-				
-		my $pattern=$key.':'.$clBranchMap{$key}.':'.$branchType;
-		#print "Pattern is $pattern\n";
-		push @osubmitInput,$pattern;
-	}		
+    my @osubmitInput;
+    my @osubmitInputFields=("depChanges","2dpAppBranch");
+    my $basebranch= &getBranchForCl($osubmitClRecord{"isubmittedcl"});
+    my $basepattern=$osubmitClRecord{"isubmittedcl"}.':'.$basebranch.':'.&getBranchType($basebranch);
+    #print "*** pattern is $basepattern";
+    push @osubmitInput,$basepattern;
 
-        my $output=join ',', @osubmitInput;
-	#print "@osubmitInput\n";
-        if ($output ne "")
-        {
-            print "$output";
-        }
-        else
-        {
-           print "None";
-        }
+    if( $osubmitClRecord{"depChanges"} eq "NONE")
+    {
+        push @osubmitInput,"NONE";
+    }
+    else
+    {
+        my $cl = $osubmitClRecord{"depChanges"};
+        my $br = &getBranchForCl($cl);
+        my $brtype = &getBranchType($br);
+        my $pattern= $cl.':'.$br.':'. $brtype;
+        push @osubmitInput,$pattern;
+    }
+
+    if( $osubmitClRecord{"2dpAppBranch"} eq "NONE")
+    {
+        push @osubmitInput,"NONE";
+    }
+    else
+    {
+        push @osubmitInput, $osubmitClRecord{"2dpAppBranch"};
+    }
+
+    my $finaloutput=join ',', @osubmitInput;
+    #print "@osubmitInput\n";
+    if ($finaloutput ne "")
+    {
+        print "$finaloutput";
+    }
+    else
+    {
+       print "None";
+    }
 }
 
 # Update field value for a given database table
@@ -372,7 +394,7 @@ sub getClOwner {
         exit;
     }
 }
-# Reject CL for compilation failure scenarion
+
 sub  rejectCl {
 
     my $cl = shift;
@@ -390,6 +412,45 @@ sub  rejectCl {
     $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
 }
 
+sub  isOsubmitEnabledBranch {
+        my $br = shift;
+        my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+        my $osubmitflagQuery = $dbh->prepare("SELECT oSubmit_flag FROM sanity_check.allowed_branch where branch='$br'");
+        $osubmitflagQuery->execute() or die $DBI::errstr;
+        my $flag = $osubmitflagQuery->fetchrow_array;
+        $osubmitflagQuery->finish();
+        $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+        return $flag;
+}
+
+sub  getBranchForCl {
+    my $cl = shift;
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $query = $dbh->prepare("SELECT Branch FROM sanity_check.fresh_entries where Shelved_Change_No='$cl'");
+    $query->execute() or die $DBI::errstr;
+    my $br = $query->fetchrow_array;
+    $query->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+    return $br;
+}
+
+sub getBranchType {
+     my $refdepotpath=shift;
+     my $isDevBranch;
+     my $branchType;
+     if (( split '/', $refdepotpath )[3] eq "dev")
+     {
+        $isDevBranch ="YES";
+        $branchType ="DEV";
+        #print "$refdepotpath is a development branch\n";
+      }
+    else {
+        $isDevBranch ="NO";
+        $branchType ="NONDEV";
+        #print "$refdepotpath is NOT a development branch\n";
+    }
+    return $branchType;
+}
 
 
 
