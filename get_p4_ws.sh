@@ -62,6 +62,7 @@ else
       mkdir -p $RootFolder
    fi
    cd $RootFolder
+   echo "Executng p4 client -t $tfile -o ${Client} | p4 client -i" 
    p4 client -t $tfile -o ${Client} | p4 client -i
    if [ $? -ne 0 ]; then
       echo "Error: Client ${Client} has not been created. Looks like there are some issue."
