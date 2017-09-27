@@ -36,7 +36,7 @@ node ("${Host}"){
 	try {
     stage ('Preparation')
     {
-	build job: 'Pre-iSubmit BM Update', parameters: [string(name: 'Changelist', value: "${Changelist}"), string(name: 'Host', value: "${Host}"), string(name: 'Build_Number', value: "${BUILD_NUMBER}")], wait: false
+	build job: 'Pre-iSubmit BM Update', parameters: [string(name: 'Changelist', value: "${Changelist}"), string(name: 'Host', value: "${Host}"), string(name: 'BuildNumber', value: "${BUILD_NUMBER}")], wait: false
         checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', noTags: true, reference: '', shallow: true]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '735466fc-bc83-4554-b2f8-00721c6c1928', url: 'git@sv-gitswarm-prd.infinera.com:svarshney/Tools.git']]])
         sh 'sh get_p4_ws.sh ${Branch}'
         sh 'if [ -d ${LOGSERR} ]; then rm -rf ${LOGSERR}; fi'
