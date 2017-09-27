@@ -1,5 +1,6 @@
 env.Host="${JOB_NAME}"
 env.P4CLIENT="CLV_${Branch}_${Host}"
+env.CURRENTBRANCH="${Branch}"
 env.CCMAIL="svarshney@infinera.com,mkrishan@infinera.com,DUpadhaye@infinera.com,jili@infinera.com,mkrishna@infinera.com"
 CL=ChangeList.split(",")
 env.mcl=CL[0]
@@ -126,10 +127,12 @@ node ("${Host}"){
     stage ('CopyArtifacts') {
 		def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
         if (env.Host ==~ /sv-.*/) {
-			sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-			sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
-			build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
-        }
+			if(env.CURRENTBRANCH !=~ /cx-.*/){
+				sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+				sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+				build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
+        		}
+	}
         if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
             build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
         }
