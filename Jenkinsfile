@@ -127,7 +127,9 @@ node ("${Host}"){
     stage ('CopyArtifacts') {
 		def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
         if (env.Host ==~ /sv-.*/) {
-			if(env.CURRENTBRANCH !=~ /cx-.*/){
+			if(env.CURRENTBRANCH ==~ /cx-.*/){
+			}
+			else{
 				sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
 				sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 				build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
