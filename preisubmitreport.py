@@ -217,11 +217,16 @@ def composeHtmlReport(status_info):
     #Find the hostname
     hostname = socket.gethostname()
     print hostname
-    feedbacklink = 'http://%s:8080/' %hostname+'job/iSubmit%20main%20Sanity%20feedback/parambuild/?'+'Changelists=%s' %options.changelists
-    print feedbacklink
+    #feedbacklink = 'http://%s:8080/' %hostname+'job/iSubmit%20main%20Sanity%20feedback/parambuild/?'+'Changelists=%s' %options.changelists
+    #print feedbacklink
+    #HTML_HEADING = '''<BR><HTML>
+    #<BODY>
+    #<b><u><a href="%s">Changelists details of Pre-iSubmit Build: %s</a></b></u>
+    #<BR><BR>
+    #'''
     HTML_HEADING = '''<BR><HTML>
     <BODY>
-    <b><u><a href="%s">Changelists details of Pre-iSubmit Build: %s</a></b></u>
+    <b><u>Changelists details of Pre-iSubmit Build:%s</b></u>
     <BR><BR>
     '''
     
@@ -385,7 +390,7 @@ def composeHtmlReport(status_info):
             #Ignore if there is any exception thrown while getting the Open isubmit DT's
             pass
     
-    htmlreport = HTML_HEADING %(feedbacklink,options.build)+CLTABLE_HEADER+CLTABLE_ROW+CLTABLE_FOOTER+HTML_SUMMARY_TABLE+HTML_SUMMARY_ROW+HTML_SUMMARY_FOOTER+\
+    htmlreport = HTML_HEADING %options.build+CLTABLE_HEADER+CLTABLE_ROW+CLTABLE_FOOTER+HTML_SUMMARY_TABLE+HTML_SUMMARY_ROW+HTML_SUMMARY_FOOTER+\
                  htmldtcontent+HTML_FOOTER
     #htmlreport = HTML_HEADING %(options.changelists,options.build)+HTML_SUMMARY_TABLE+HTML_SUMMARY_ROW+HTML_SUMMARY_FOOTER+\
     #             HTML_TESTCASE_HEADER+HTML_TESTCASE_TABLE_HEADER+HTML_TESTCASE_DETAILS+HTML_TESTCASE_FOOTER+\
@@ -477,9 +482,9 @@ if __name__ == '__main__':
     <table border="1">
        <tr bgcolor=#DBE5F1>
          <th>Pre-iSubmit CL</th>
-         <th>Unshelved CL</th>
          <th>DT</th>
          <th>UserId</th>
+         <th>Files Affected</th>
        </tr>
     '''
     CLTABLE_FOOTER = '''</table><br><br>'''
@@ -491,6 +496,7 @@ if __name__ == '__main__':
         i=0
         for cl in cls:
             if cl:
+                filelist = ''
                 dtstr = 'None'
                 bcol = "#FFFFFF"
                 if i%2 != 0:
@@ -501,7 +507,12 @@ if __name__ == '__main__':
                 p = Popen(["/usr/bin/p4","-p","perforce:1666","-u","bangbuild","-P","B11FFB5FFDE3BBA9470A8318DE219A76","describe","-sO",cl],stdout=PIPE)
                 output,err = p.communicate()
                 #print output
-                m=re.search('iSubmitted Change (\d+) by (\w+)',output)
+                for line in output.split('\n'):
+                    line=line.strip()
+                    if line.startswith('... //swdepot'):
+                        filelist += line+'<br>'
+                        
+                m=re.search('Change (\d+) by (\w+)\@',output)
                 if m:
                     isubmitcl = m.group(1)
                     submitter = m.group(2)
@@ -516,11 +527,12 @@ if __name__ == '__main__':
                     <td align="center">%s</td>
                     <td align="center">%s</td>
                     <td align="center">%s</td>
-                    <td align="center">%s</td>
+                    <td>%s</td>
                 </tr>
-                '''%(bcol,isubmitcl,cl,dtstr,submitter)
+                '''%(bcol,isubmitcl,dtstr,submitter,filelist)
                 i+=1
-
+    #print addemail
+    #print dtstr
     options.email = addemail+options.email
     status      = getReport()
     htmlcontent,verdict = composeHtmlReport(status)
