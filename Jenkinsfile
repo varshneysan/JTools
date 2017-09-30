@@ -100,6 +100,7 @@ node ("${Host}"){
         
         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'INCOMPILATION')], wait: false
         sh 'sed -i s/.[^.*]*$/."$mcl"/g  "${WPath}/${Branch}/src_ne/latest.txt"'
+        sh 'cd ${WPath}/${Branch} && sh ${WORKSPACE}/precreatefolders.sh'
         sh 'cd ${WPath}/${Branch}/etc2.0 && HOSTNAME=$Host ./BuildManage.sh -s -b ALL > ${LOGS}/BuildLog.txt 2>&1'
         sh 'lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l` && errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l` && if [[ -d "${WPath}/${Branch}/tar_ne" &&  $errc -eq 0 ]]; then  echo "Build Artifacts Generated" && exit 0; else mkdir ${LOGSERR} && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/; if [ $lcount -gt 0 ]; then cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; else cp ${LOGS}/BuildLog.txt ${LOGSERR}/BuildLog.log; fi; exit 1; fi'
       }   
