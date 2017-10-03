@@ -61,14 +61,14 @@ node ("${Host}"){
 		)
     }
     } catch (Exception e) {
-        sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-        sh 'p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'READY')], wait: false
         build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
         mail (to: 'svarshney@infinera.com,mkrishan@infinera.com',    
            subject: 'pre-iSubmit - Initial stage issue. Please take a look.',
            body: "Hi, Looks like Initial Stage issue for OSubmit job for URL : ${env.BUILD_URL}. This need your attention immediately. Logs are available at ${LOGS}" )
 		currentBuild.description = "CLs : ${ChangeList}"
+        sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
+        sh 'p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'exit 1'
     }
     
@@ -84,14 +84,14 @@ node ("${Host}"){
 			
 		} 
 	} catch (Exception e) {
-	    mail (to: "${mailer}",    
+		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'CONFLICTING')], wait: false
+	        mail (to: "${mailer}",    
 			cc: "${CCMAIL}",
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
 			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls refer ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
 		currentBuild.description = "CLs : ${ChangeList}"
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
-		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'CONFLICTING')], wait: false
 		sh 'exit 1'
 	}
 	
@@ -106,20 +106,17 @@ node ("${Host}"){
       }   
     } catch (Exception e) {
         archiveArtifacts artifacts: 'LOGS_ERR/*'
+		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'COMPILATION_FAILED')], wait: false
+		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 		
 		mail (to: "${mailer}",    
 			cc: "${CCMAIL}",
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due to compile errors. Please take a look.",
 			body: "Your Changelists ${ChangeList} got rejected due to compilation error. Pls referr ${env.BUILD_URL} for more info. You also can download the Error logs from the same URL." )
-        
-		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
-		
-		
-		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'COMPILATION_FAILED')], wait: false
-		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 		
 		currentBuild.description = "CLs : ${ChangeList}"
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
 		sh 'exit 1'
         
     }
