@@ -51,6 +51,9 @@ my $getClOwner;
 my $p4cl;
 my $rejectChangelist;
 my $rejectionReason;
+my $sanityflag;
+my $currentBranch;
+
 
 # Process inputs from user
 GetOptions(
@@ -72,10 +75,12 @@ GetOptions(
    'getClOwner' => \$getClOwner,
    'p4cl=i' => \$p4cl,
    'rejectChangelist' => \$rejectChangelist,
-   'reason=s' => \$rejectionReason
+   'reason=s' => \$rejectionReason,
+   'isSanityEnabled' => \$sanityflag,
+   'branch=s' => \$currentBranch
   ) or die "Invalid options passed to $0\n";
 
-die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner or $rejectChangelist;
+die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner or $rejectChangelist or $sanityflag;
 
 if ($allocBm and $clfetch)
 {
@@ -125,6 +130,11 @@ if ($rejectChangelist)
     exit; 
 }
 
+if ($sanityflag)
+{
+    &isSanityEnabled($currentBranch);
+    exit;
+}
 
 sub allocBuildMachine {
 
@@ -455,7 +465,24 @@ sub getBranchType {
     return $branchType;
 }
 
+sub isSanityEnabled {
 
+    my $branch = shift;
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $osubmitSanityflagQuery = $dbh->prepare("SELECT oSubmitSanity_flag FROM sanity_check.allowed_branch where branch='$branch'");
+    $osubmitSanityflagQuery->execute() or die $DBI::errstr;
+    my $flag = $osubmitSanityflagQuery->fetchrow_array;
+    $osubmitSanityflagQuery->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n";
+    if (not defined($flag) or ($flag eq "") or ($flag eq "false")){
+        print "NO";
+    }
+    else
+    {
+        print "YES";
+    }
+
+}
 
 
 
