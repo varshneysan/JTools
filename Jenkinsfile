@@ -115,8 +115,8 @@ node ("${Host}"){
 			body: "Your Changelists ${ChangeList} got rejected due to compilation error. Pls referr ${env.BUILD_URL} for more info. You also can download the Error logs from the same URL." )
 		
 		currentBuild.description = "CLs : ${ChangeList}"
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'exit 1'
         
     }
