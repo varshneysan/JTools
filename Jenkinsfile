@@ -122,7 +122,8 @@ node ("${Host}"){
     }
     
     
-    stage ('CopyArtifacts') {
+    try {
+     stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
 	def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "$DepotPath"', returnStdout: true
 	if (out == "YES") {
@@ -139,6 +140,9 @@ node ("${Host}"){
 	}
 	
     }   
+    } catch (Exception e) {
+         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+    }
     
     stage ('CleanUp WS') {
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
