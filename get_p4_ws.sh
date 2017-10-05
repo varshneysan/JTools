@@ -31,6 +31,14 @@ function get_template {
     fi
 }
 
+function cleanup_client {
+   export P4CLIENT=$Client
+   echo "Cleaning up client $Client"
+   p4 -c $Client revert //...  
+   rm -rf ${RootFolder}
+   p4 client -d $Client
+}
+
 if [ -z ${Branch} ]; then
    echo "Error: Branch Name is missing"
    exit 1
@@ -50,20 +58,25 @@ if [ ! -z tempfile.txt ]; then
 fi
 rm -f tempfile.txt
 
+if [[ $Host =~ IN-* ]] || [[ $Host =~ in-* ]]; then
+      RootFolder="/home/bangbuild/CLVERI/workspace/"
+elif [[ $Host =~ sv-* ]]; then
+      RootFolder="/bld_home/bangbuild/CLVERI/workspace/"
+fi
+
+
 if [ $bfound -eq 1 ]; then
    echo "Info: Client $Client is already here."
-else
-   if [[ $Host =~ IN-* ]] || [[ $Host =~ in-* ]]; then
-      RootFolder="/home/bangbuild/CLVERI/workspace/"
-   elif [[ $Host =~ sv-* ]]; then
-      RootFolder="/bld_home/bangbuild/CLVERI/workspace/"
-   fi
+   cleanup_client
+
    if [ ! -d $RootFolder ]; then
       mkdir -p $RootFolder
    fi
+
    cd $RootFolder
    echo "Executng p4 client -t $tfile -o ${Client} | p4 client -i" 
    p4 client -t $tfile -o ${Client} | p4 client -i
+
    if [ $? -ne 0 ]; then
       echo "Error: Client ${Client} has not been created. Looks like there are some issue."
       exit 1
