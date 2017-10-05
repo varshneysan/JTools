@@ -68,6 +68,7 @@ fi
 if [ $bfound -eq 1 ]; then
    echo "Info: Client $Client is already here."
    cleanup_client
+fi
 
    if [ ! -d $RootFolder ]; then
       mkdir -p $RootFolder
@@ -83,5 +84,4 @@ if [ $bfound -eq 1 ]; then
    else
       echo "Client $Client has been created" 
    fi
-fi
 exit 0
