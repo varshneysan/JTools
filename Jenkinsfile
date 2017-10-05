@@ -134,7 +134,10 @@ node ("${Host}"){
         if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
             build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
         }
+	} else {
+	    build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	}
+	
     }   
     
     stage ('CleanUp WS') {
