@@ -413,7 +413,7 @@ sub  rejectCl {
     my $cl = shift;
     my $reason = shift;
     my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-    my $query = $dbh->prepare("insert into sanity_check.osubmit_failed_history (Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number) select Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number from sanity_check.fresh_entries where Shelved_Change_No = '$cl'");
+    my $query = $dbh->prepare("insert into sanity_check.osubmit_failed_history (Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number,2dParty_Applicable_Branch) select Developer,Shelved_Change_No,Date,Feature_Bug_No,Branch,Dependent_changes,Integration_Status,Build_Status,Sanity_Status,Reviewer,Tested,TestCase,Description,local_change,Build_Number,2dParty_Applicable_Branch from sanity_check.fresh_entries where Shelved_Change_No = '$cl'");
     $query->execute() or die $DBI::errstr;
     $query->finish();
     $query = $dbh->prepare("UPDATE sanity_check.osubmit_failed_history SET Build_Status='$reason' where Shelved_Change_No='$cl'");
