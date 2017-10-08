@@ -469,7 +469,7 @@ sub isSanityEnabled {
 
     my $branch = shift;
     my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-    my $osubmitSanityflagQuery = $dbh->prepare("SELECT oSubmitSanity_flag FROM sanity_check.allowed_branch where branch='$branch'");
+    my $osubmitSanityflagQuery = $dbh->prepare("SELECT oSubmitSanity_flag FROM sanity_check.allowed_branch where branch like '$branch%'");
     $osubmitSanityflagQuery->execute() or die $DBI::errstr;
     my $flag = $osubmitSanityflagQuery->fetchrow_array;
     $osubmitSanityflagQuery->finish();
