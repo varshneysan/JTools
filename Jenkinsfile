@@ -105,6 +105,7 @@ node ("${Host}"){
         sh 'lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l` && errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l` && if [[ -d "${WPath}/${Branch}/tar_ne" &&  $errc -eq 0 ]]; then  echo "Build Artifacts Generated" && exit 0; else mkdir ${LOGSERR} && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/; if [ $lcount -gt 0 ]; then cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; else cp ${LOGS}/BuildLog.txt ${LOGSERR}/BuildLog.log; fi; exit 1; fi'
       }   
     } catch (Exception e) {
+ 	sh 'sh ${WORKSPACE}/generate_consolidate_errlog.sh "${WPath}/${Branch}" && cp ${WPath}/${Branch}/src_ne/parallelbuild_consolidated_err.log ${WORKSPACE}/LOGS_ERR/'
         archiveArtifacts artifacts: 'LOGS_ERR/*'
 		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'COMPILATION_FAILED')], wait: false
 		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
@@ -125,7 +126,7 @@ node ("${Host}"){
     try {
      stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
-	def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "$DepotPath"', returnStdout: true
+	def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
 	if (out == "YES") {
         if (env.Host ==~ /sv-.*/) {
 				sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
