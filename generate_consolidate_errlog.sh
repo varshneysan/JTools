@@ -41,4 +41,9 @@ done
 }
 
 ws_root_path=$1
+if [ -f $consolidated_error_file ]
+then
+    rm -rf $consolidated_error_file
+fi
 GenerateConsolidateErrorLogFile $ws_root_path
+exit 0
