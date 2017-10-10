@@ -23,6 +23,7 @@ error_pattern=( "error:"\
                 "file changed as we read it" \
                 "compilation terminated" \
                 "File in wrong format" \
+                "cp: cannot stat" \
                 "references nonexistent")
 
 all_error_pattern=( "${error_pattern[@]}")
