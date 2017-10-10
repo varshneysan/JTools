@@ -504,7 +504,7 @@ if __name__ == '__main__':
                 isubmitcl = ''
                 submitter = ''
                 dts       = []
-                p = Popen(["/usr/bin/p4","-p","perforce:1666","-u","bangbuild","-P","B11FFB5FFDE3BBA9470A8318DE219A76","describe","-sO",cl],stdout=PIPE)
+                p = Popen(["/usr/bin/p4","-p","indperforce:1666","-u","bangbuild","-P","BD09EFDFEEA034D237ADE61B256006A9","describe","-sO",cl],stdout=PIPE)
                 output,err = p.communicate()
                 #print output
                 for line in output.split('\n'):
