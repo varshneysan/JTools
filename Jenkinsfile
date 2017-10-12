@@ -85,6 +85,7 @@ node ("${Host}"){
 		} 
 	} catch (Exception e) {
 		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'CONFLICTING')], wait: false
+		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 	        mail (to: "${mailer}",    
 			cc: "${CCMAIL}",
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
