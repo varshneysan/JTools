@@ -56,7 +56,7 @@ node ("${Host}"){
 		"2dParty": {
 		sh 'echo "Synching 2dParty"; \
 		    cd ${WPath}/${Branch}/etc2.0 && alias p4="p4 -u bangbuild -P ${P4PASSWD}" && ./BuildManage.sh -s > ${LOGS}/2dParty.log 2>&1'
-		sh 'if [ "${Branch}" ==  "main" ]; then p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT}  sync //swdepot/3dParty/NM/... > ${LOGS}/3dParty.log 2>&1 ;fi'
+		sh 'if [ "${Branch}" ==  "main" ] || [ "${Branch}" == "sb-dcicls" ]; then p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT}  sync //swdepot/3dParty/NM/... > ${LOGS}/3dParty.log 2>&1 ;fi'
         }
 		)
     }
@@ -66,7 +66,7 @@ node ("${Host}"){
         mail (to: 'svarshney@infinera.com,mkrishan@infinera.com',    
            subject: 'pre-iSubmit - Initial stage issue. Please take a look.',
            body: "Hi, Looks like Initial Stage issue for OSubmit job for URL : ${env.BUILD_URL}. This need your attention immediately. Logs are available at ${LOGS}" )
-		currentBuild.description = "CLs : ${ChangeList}"
+		currentBuild.description = " ${Branch} CLs : ${ChangeList}"
         sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
         sh 'p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'exit 1'
@@ -89,7 +89,7 @@ node ("${Host}"){
 			cc: "${CCMAIL}",
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
 			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls refer ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
-		currentBuild.description = "CLs : ${ChangeList}"
+		currentBuild.description = "${Branch} CLs : ${ChangeList}"
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'exit 1'
@@ -115,7 +115,7 @@ node ("${Host}"){
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due to compile errors. Please take a look.",
 			body: "Your Changelists ${ChangeList} got rejected due to compilation error. Pls referr ${env.BUILD_URL} for more info. You also can download the Error logs from the same URL." )
 		
-		currentBuild.description = "CLs : ${ChangeList}"
+		currentBuild.description = "${Branch} CLs : ${ChangeList}"
 		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
 		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
 		sh 'exit 1'
@@ -154,6 +154,6 @@ node ("${Host}"){
 
     }
     }
-	currentBuild.description = "CLs : ${ChangeList}"
+	currentBuild.description = "${Branch} CLs : ${ChangeList}"
 }
 
