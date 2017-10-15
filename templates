@@ -2,3 +2,4 @@ main                            bld_main_sv-mvbld-04
 cx-main                         bld_cx-main_sv-intgbld-01
 r17.1.x                         bld_r17.1.x_sv-mvbld-04
 sb-dcicls                       bld_sb-dcicls_in-mvlb42
+cx-r17.1			bld_cx-r17.1_sv-intgbld-01			
