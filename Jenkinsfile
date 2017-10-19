@@ -130,6 +130,7 @@ node ("${Host}"){
      stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
 	def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
+         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	if (out == "YES") {
         if (env.Host ==~ /sv-.*/) {
 				sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
