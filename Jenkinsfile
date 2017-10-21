@@ -16,12 +16,14 @@ node ("${Host}"){
 		env.LOGS="/home/bangbuild/CLVERI/LOGS/${BUILD_NUMBER}/"
 		env.P4PORT='bangperforce:1667'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
+		env.SANITYSER="10.220.82.16"
 	}
 	if (env.Host ==~ /sv-.*/) {
 	    env.WPath="/bld_home/bangbuild/CLVERI/workspace"
 		env.LOGS="/bld_home/bangbuild/CLVERI/LOGS/${BUILD_NUMBER}/"
 		env.P4PORT='perforce:1666'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
+		env.SANITYSER="sv-mvbld-10"
 		
 	}
 	if (env.debug) {
@@ -43,8 +45,8 @@ node ("${Host}"){
         sh 'if [ ! -d ${LOGS} ]; then mkdir -p ${LOGS};fi;'
         sh 'p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/etc2.0/... > ${LOGS}/IQNOS_Sync.log 2>&1'
 		echo "INFO : P4CLIENT -  ${P4CLIENT}"
-		echo "INFO : LOGS - ${LOGS}"
-		echo "INFO : LOGSERR - ${LOGSERR}"
+		echo "INFO : LOGS     -  ${LOGS}"
+		echo "INFO : LOGSERR  -  ${LOGSERR}"
     }
     
     stage ('Synching WA') 
@@ -129,24 +131,26 @@ node ("${Host}"){
     try {
      stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
-	def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
-         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
-	if (out == "YES") {
+	//def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
+        build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+	build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
+	if ( env.isSanityEnabled == "YES") {
         if (env.Host ==~ /sv-.*/) {
-				sh 'ssh bangbuild@sv-mvbld-10 "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-				sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@sv-mvbld-10:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
-				build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
+		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		build job: 'Pre-iSubmit CSIM sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	}
         if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
-            build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		build job: 'Pre-iSubmit CSIM-IND', parameters: [string(name: 'FtpLocation', value: "/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
+	
         }
-	} else {
-	    build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
-	}
+	} 
 	
     }   
     } catch (Exception e) {
-         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+	 echo 'Sanity failed'
     }
     
     stage ('CleanUp WS') {
