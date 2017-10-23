@@ -143,7 +143,7 @@ node ("${Host}"){
         if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
 		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
 		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
-		build job: 'Pre-iSubmit CSIM-IND', parameters: [string(name: 'FtpLocation', value: "/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
+		build job: 'Pre-iSubmit CSIM-IND', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	
         }
 	} 
