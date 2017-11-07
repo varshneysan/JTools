@@ -61,6 +61,7 @@ node ("${Host}"){
 		sh 'if [ "${Branch}" ==  "main" ] || [ "${Branch}" == "sb-dcicls" ]; then p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT}  sync //swdepot/3dParty/NM/... > ${LOGS}/3dParty.log 2>&1 ;fi'
         }
 		)
+	build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_p4_ws_sync_end_time'), string(name: 'CLs', value: "${ChangeList}")]
     }
     } catch (Exception e) {
         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'READY')], wait: false
@@ -83,7 +84,7 @@ node ("${Host}"){
 			sh 'p4 -u bangbuild -P ${P4PASSWD} resolve -am'
 			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
 			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
-			
+			build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_unshelving_end_time'), string(name: 'CLs', value: "${ChangeList}")]	
 		} 
 	} catch (Exception e) {
 		build job: 'Pre-iSubmit CL Rejection', parameters: [string(name: 'Changelist', value: "${ChangeList}"), string(name: 'Reason', value: 'CONFLICTING')], wait: false
@@ -107,6 +108,7 @@ node ("${Host}"){
         sh 'cd ${WPath}/${Branch} && sh ${WORKSPACE}/precreatefolders.sh'
         sh 'cd ${WPath}/${Branch}/etc2.0 && HOSTNAME=$Host ./BuildManage.sh -s -g -b ALL > ${LOGS}/BuildLog.txt 2>&1'
         sh 'lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l` && errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l` && if [[ -d "${WPath}/${Branch}/tar_ne" &&  $errc -eq 0 ]]; then  echo "Build Artifacts Generated" && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGS}/ && exit 0; else mkdir ${LOGSERR} && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/; if [ $lcount -gt 0 ]; then cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; else cp ${LOGS}/BuildLog.txt ${LOGSERR}/BuildLog.log; fi; exit 1; fi'
+	build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_compilation_end_time'), string(name: 'CLs', value: "${ChangeList}")]
       }   
     } catch (Exception e) {
 	sh 'if [ ! -d ${WORKSPACE}/LOGS_ERR/ ]; then mkdir ${WORKSPACE}/LOGS_ERR/; lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l`;errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l`; [ $lcount -gt 0 ] && cp -f ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; [ $errc -gt 0 ] &&  ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/;fi'
