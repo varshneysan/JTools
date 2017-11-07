@@ -53,6 +53,7 @@ my $rejectChangelist;
 my $rejectionReason;
 my $sanityflag;
 my $currentBranch;
+my $updatetimestamp;
 
 
 # Process inputs from user
@@ -65,8 +66,6 @@ GetOptions(
    'updateDb' => \$updateDb,
    'database=s' => \$dbschema,
    'dbtable=s' => \$dbtable,
-   'field=s' => \$dbfield,
-   'set=s' => \$dbfieldvalue,
    'conditionExpr=s' => \$conditionExpr,
    'conditionValue=s' => \$conditionValue,
    'setclstate' => \$setclstate,
@@ -77,10 +76,14 @@ GetOptions(
    'rejectChangelist' => \$rejectChangelist,
    'reason=s' => \$rejectionReason,
    'isSanityEnabled' => \$sanityflag,
-   'branch=s' => \$currentBranch
+   'branch=s' => \$currentBranch,
+   'updatetime' => \$updatetimestamp,
+   'field=s' => \$dbfield,
+   'set=s' => \$dbfieldvalue
+
   ) or die "Invalid options passed to $0\n";
 
-die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner or $rejectChangelist or $sanityflag;
+die "$0 requires valid commandline user input!!! \n" unless $allocBm or $clfetch or $updateDb or $lockAction or $setclstate or $getClOwner or $rejectChangelist or $sanityflag or $updatetimestamp;
 
 if ($allocBm and $clfetch)
 {
@@ -134,6 +137,11 @@ if ($sanityflag)
 {
     &isSanityEnabled($currentBranch);
     exit;
+}
+
+if ($updatetimestamp)
+{
+    &update_active_time($p4cl,$dbfield);
 }
 
 sub allocBuildMachine {
@@ -484,5 +492,18 @@ sub isSanityEnabled {
 
 }
 
+sub update_active_time {
+    my $CL = shift;
+    my $field = shift;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    $mon++;
+    $year=$year + 1900;
+    my $tformat="$year" . "-" . "$mon" . "-" . "$mday" . " " . "$hour" . ":" . $min . ":" . $sec;
 
+    my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
+    my $osubmitSanityflagQuery = $dbh->prepare("UPDATE sanity_check.tbl_isubmitquery SET $field='$tformat' where iSubmitted_Changelist='$CL'");
+    $osubmitSanityflagQuery->execute() or die $DBI::errstr;
+    $osubmitSanityflagQuery->finish();
+    $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n"; 
+}
 
