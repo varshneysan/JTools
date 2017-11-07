@@ -501,7 +501,19 @@ sub update_active_time {
     my $tformat="$year" . "-" . "$mon" . "-" . "$mday" . " " . "$hour" . ":" . $min . ":" . $sec;
 
     my $dbh = DBI->connect($dsn, $userid, $password ) or die $DBI::errstr;
-    my $osubmitSanityflagQuery = $dbh->prepare("UPDATE sanity_check.tbl_isubmitquery SET $field='$tformat' where iSubmitted_Changelist='$CL'");
+    if ($field == "load_mgr_pickup_end_time") {
+       my $osubmitSanityflagQuery = $dbh->prepare("SELECT iSubmitted_CL FROM sanity_check.tbl_preisubmit_data WHERE iSubmitted_CL='$CL'");
+       $osubmitSanityflagQuery->execute() or die $DBI::errstr;
+       my $flag = $osubmitSanityflagQuery->fetchrow_array;
+       $osubmitSanityflagQuery->finish();
+       if (not defined($flag) or ($flag eq "")) { 
+ 	  print "No entry for $CL\n";
+          my $osubmitSanityflagQuery = $dbh->prepare("INSERT INTO sanity_check.tbl_preisubmit_data (iSubmitted_CL) VALUES ('$CL')");
+	  $osubmitSanityflagQuery->execute() or die $DBI::errstr;
+          $osubmitSanityflagQuery->finish();
+       }
+    }
+    my $osubmitSanityflagQuery = $dbh->prepare("UPDATE sanity_check.tbl_preisubmit_data SET $field='$tformat' WHERE iSubmitted_CL='$CL'");
     $osubmitSanityflagQuery->execute() or die $DBI::errstr;
     $osubmitSanityflagQuery->finish();
     $dbh->disconnect or warn "Disconnection failed: $DBI::errstr\n"; 
