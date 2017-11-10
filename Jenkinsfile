@@ -47,6 +47,7 @@ node ("${Host}"){
 		echo "INFO : P4CLIENT -  ${P4CLIENT}"
 		echo "INFO : LOGS     -  ${LOGS}"
 		echo "INFO : LOGSERR  -  ${LOGSERR}"
+		echo "INFO : Changelist - ${ChangeList}"
     }
     
     stage ('Synching WA') 
