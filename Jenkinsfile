@@ -138,12 +138,12 @@ node ("${Host}"){
         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 	if ( env.isSanityEnabled == "YES") {
-        if (env.Host ==~ /sv-.*/) {
+        if (env.SanitySide == "sv"|| env.SanitySide == "SV") {
 		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
 		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'SV_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	}
-        if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) { 
+        if (env.Host == "IND" || env.Host == "ind") { 
 		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
 		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'IND_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
