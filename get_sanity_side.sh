@@ -50,8 +50,8 @@ if [ $action == "LM" ]; then
    [ $SV_LOAD -eq $IND_LOAD ] && SV_LOAD_ADD=`expr $SV_LOAD + 1` && sed -i "s/SV:$SV_LOAD/SV:$SV_LOAD_ADD/" $file && echo SV
    [ $SV_LOAD -gt $IND_LOAD ] && IND_LOAD_ADD=`expr $IND_LOAD + 1` && sed -i "s/IND:$IND_LOAD/IND:$IND_LOAD_ADD/" $file && echo IND
 elif [ $action == "CUTLM" ]; then
-   [ $action_side == "SV" ] && SV_LOAD_ADD=`expr $SV_LOAD - 1` && sed -i "s/SV:$SV_LOAD/SV:$SV_LOAD_ADD/" $file && echo SV_LOAD_ADD=$SV_LOAD_ADD
-   [ $action_side == "IND" ] && IND_LOAD_ADD=`expr $IND_LOAD - 1` && sed -i "s/IND:$IND_LOAD/IND:$IND_LOAD_ADD/" $file && IND_LOAD_ADD=$IND_LOAD_ADD
+   [ $action_side == "SV" ] && SV_LOAD_ADD=`expr $SV_LOAD - 1` && sed -i "s/SV:$SV_LOAD/SV:$SV_LOAD_ADD/" $file 
+   [ $action_side == "IND" ] && IND_LOAD_ADD=`expr $IND_LOAD - 1` && sed -i "s/IND:$IND_LOAD/IND:$IND_LOAD_ADD/" $file 
 fi
 [ $debug ] && cat $file
 rm -f $sanity_lock
