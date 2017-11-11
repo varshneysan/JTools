@@ -16,16 +16,19 @@ node ("${Host}"){
 		env.LOGS="/home/bangbuild/CLVERI/LOGS/${BUILD_NUMBER}/"
 		env.P4PORT='bangperforce:1667'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
-		env.SANITYSER="10.220.82.16"
 	}
 	if (env.Host ==~ /sv-.*/) {
 	    env.WPath="/bld_home/bangbuild/CLVERI/workspace"
 		env.LOGS="/bld_home/bangbuild/CLVERI/LOGS/${BUILD_NUMBER}/"
 		env.P4PORT='perforce:1666'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
-		env.SANITYSER="sv-mvbld-10"
-		
 	}
+	if (env.SanitySide == "IND" || env.SanitySide == "ind") {
+		env.SANITYSER="10.220.82.16"
+	}
+	if (env.SanitySide == "sv"|| env.SanitySide == "SV") {
+		env.SANITYSER="sv-mvbld-10"
+	}	
 	if (env.debug) {
 		env.CCMAIL="svarshney@infinera.com"
 		env.mailer="svarshney@infinera.com"
@@ -143,7 +146,7 @@ node ("${Host}"){
 		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'SV_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	}
-        if (env.Host == "IND" || env.Host == "ind") { 
+        if (env.SanitySide == "IND" || env.SanitySide == "ind") { 
 		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
 		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'IND_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false

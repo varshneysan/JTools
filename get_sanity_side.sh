@@ -24,7 +24,7 @@ Usage :
        $0 LM  -- OR -- $0 LM
 
     -- To GiveBack the Sanity Side
-       $0 SV CUTLM  -- OR -- $0 IND CUTLM
+       $0 CUTLM SV -- OR -- $0 CUTLM IND
 " && exit 1
 
 while true
