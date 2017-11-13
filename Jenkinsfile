@@ -1,7 +1,7 @@
 env.Host="${JOB_NAME}"
 env.P4CLIENT="CLV_${Branch}_${Host}"
 env.CURRENTBRANCH="${Branch}"
-env.CCMAIL="svarshney@infinera.com,mkrishan@infinera.com,DUpadhaye@infinera.com,jili@infinera.com,mkrishna@infinera.com"
+env.CCMAIL="svarshney@infinera.com,mkrishan@infinera.com,DUpadhaye@infinera.com,wseto@infinera.com,mkrishna@infinera.com"
 CL=ChangeList.split(",")
 env.mcl=CL[0]
 
