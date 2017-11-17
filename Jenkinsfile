@@ -145,7 +145,7 @@ node ("${Host}"){
         def CSIMSanitySide = sh (
 		script: '${WORKSPACE}/get_sanity_side.sh',
    		returnStdout: true
-		).trip()
+		).trim()
 
         if (CSIMSanitySide == "sv"|| CSIMSanitySide == "SV") {
 		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
