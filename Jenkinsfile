@@ -143,7 +143,7 @@ node ("${Host}"){
 	if ( env.isSanityEnabled == "YES") {
 
         def CSIMSanitySide = sh (
-		script: '${WORKSPAC}/get_sanity_side.sh',
+		script: '${WORKSPACE}/get_sanity_side.sh',
    		returnStdout: true
 		).trip()
 
