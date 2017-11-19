@@ -23,12 +23,8 @@ node ("${Host}"){
 		env.P4PORT='perforce:1666'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
 	}
-	if (env.SanitySide == "IND" || env.SanitySide == "ind") {
-		env.SANITYSER="10.220.82.16"
-	}
-	if (env.SanitySide == "sv"|| env.SanitySide == "SV") {
-		env.SANITYSER="sv-mvbld-10"
-	}	
+	env.IND_SANITYSER="10.220.82.16"
+	env.SV_SANITYSER="sv-mvbld-10"
 	if (env.debug) {
 		env.CCMAIL="svarshney@infinera.com"
 		env.mailer="svarshney@infinera.com"
@@ -146,15 +142,15 @@ node ("${Host}"){
 		script: '${WORKSPACE}/get_sanity_side.sh',
    		returnStdout: true
 		).trim()
-
+	echo "Sanity side : $CSIMSanitySide"
         if (CSIMSanitySide == "sv"|| CSIMSanitySide == "SV") {
-		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		sh 'ssh bangbuild@${SV_SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SV_SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'SV_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	}
         if (CSIMSanitySide == "IND" || CSIMSanitySide == "ind") { 
-		sh 'ssh bangbuild@${SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		sh 'ssh bangbuild@${IND_SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${IND_SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'IND_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	
         }
