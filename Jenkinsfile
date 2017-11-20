@@ -144,13 +144,13 @@ node ("${Host}"){
 		).trim()
 	echo "Sanity side : $CSIMSanitySide"
         if (CSIMSanitySide == "sv"|| CSIMSanitySide == "SV") {
-		sh 'ssh bangbuild@${SV_SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SV_SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		sh 'ssh -oStrictHostKeyChecking=no bangbuild@${SV_SANITYSER} "mkdir -p /bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -oStrictHostKeyChecking=no -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${SV_SANITYSER}:/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'SV_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/bld_home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	}
         if (CSIMSanitySide == "IND" || CSIMSanitySide == "ind") { 
-		sh 'ssh bangbuild@${IND_SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
-		sh 'scp -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${IND_SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
+		sh 'ssh -oStrictHostKeyChecking=no bangbuild@${IND_SANITYSER} "mkdir -p /home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne"'
+		sh 'scp -oStrictHostKeyChecking=no -r ${WPath}/${Branch}/tar_ne/SIM bangbuild@${IND_SANITYSER}:/home/pub/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/SIM'
 		build job: 'IND_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	
         }
