@@ -134,8 +134,8 @@ node ("${Host}"){
      stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
 	//def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
-    build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
+        //build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	if ( env.isSanityEnabled == "YES") {
          build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'INSANITY')], wait: false
         def CSIMSanitySide = sh (
@@ -154,10 +154,13 @@ node ("${Host}"){
 		build job: 'IND_Pre-iSubmit_CSIM_Sanity', parameters: [string(name: 'FtpLocation', value: "/osubmit_builds/${Host}/${BUILD_NUMBER}/tar_ne/${version}"), string(name: 'Changes', value: "${ChangeList}"), string(name: 'buildno', value: "${version}")], wait: false
 	
         }
-	} 
+	} else {
+           build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false  
+        } 
 	
     }   
     } catch (Exception e) {
+           build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false  
 	 echo 'Sanity failed'
     }
     
