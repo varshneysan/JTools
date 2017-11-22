@@ -134,10 +134,10 @@ node ("${Host}"){
      stage ('CopyArtifacts') {
 	def version = readFile "${WPath}/${Branch}/src_ne/latest.txt"
 	//def out = sh script: 'perl ${WORKSPACE}/osubmit_utility.pl --isSanityEnabled --branch "${DepotPath}/"', returnStdout: true
-        build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
+    build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'NEW')], wait: false
 	build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
 	if ( env.isSanityEnabled == "YES") {
-
+         build job: 'UpdateCL', parameters: [string(name: 'CLs', value: "${ChangeList}"), string(name: 'State', value: 'INSANITY')], wait: false
         def CSIMSanitySide = sh (
 		script: '${WORKSPACE}/get_sanity_side.sh',
    		returnStdout: true
