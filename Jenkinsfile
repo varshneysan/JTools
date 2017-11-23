@@ -53,12 +53,12 @@ node ("${Host}"){
     {
 		parallel (
 		"IQNOS" : {
-		sh 'echo "Synching Branch" && p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/... >> ${LOGS}/IQNOS_Sync.log 2>&1'
+		sh 'echo "Synching Branch" && p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c ${P4CLIENT} sync $DepotPath/... >> ${LOGS}/IQNOS_Sync.log 2>&1'
 		},
 		"2dParty": {
 		sh 'echo "Synching 2dParty"; \
-		    cd ${WPath}/${Branch}/etc2.0 && alias p4="p4 -u bangbuild -P ${P4PASSWD}" && ./BuildManage.sh -s > ${LOGS}/2dParty.log 2>&1'
-		sh 'if [ "${Branch}" ==  "main" ] || [ "${Branch}" == "sb-dcicls" ]; then p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT}  sync //swdepot/3dParty/NM/... > ${LOGS}/3dParty.log 2>&1 ;fi'
+		    cd ${WPath}/${Branch}/etc2.0 && alias p4="p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT}" && ./BuildManage.sh -s > ${LOGS}/2dParty.log 2>&1'
+		sh 'if [ "${Branch}" ==  "main" ] || [ "${Branch}" == "sb-dcicls" ]; then p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c ${P4CLIENT}  sync //swdepot/3dParty/NM/... > ${LOGS}/3dParty.log 2>&1 ;fi'
         }
 		)
 	build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_p4_ws_sync_end_time'), string(name: 'CLs', value: "${ChangeList}")]
