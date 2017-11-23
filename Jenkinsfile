@@ -106,6 +106,10 @@ node ("${Host}"){
         sh 'sed -i s/.[^.*]*$/."$mcl"/g  "${WPath}/${Branch}/src_ne/latest.txt"'
         sh 'cp -r /home/bangbuild/tgt_nm ${WPath}/${Branch}/' 
         sh 'cd ${WPath}/${Branch} && sh ${WORKSPACE}/precreatefolders.sh'
+        mail (to: "${mailer}",
+            cc: "${CCMAIL}",
+            subject: "pre-iSubmit : Compilation started for Change# ${ChangeList}",
+            body: "Your Changelist ${ChangeList} is in pre-iSubmit compilation phase now. Pls refer ${env.BUILD_URL} for more info." )
         sh 'cd ${WPath}/${Branch}/etc2.0 && HOSTNAME=$Host ./BuildManage.sh -s -g -b ALL > ${LOGS}/BuildLog.txt 2>&1'
         sh 'lcount=`ls ${WPath}/${Branch}/src_ne/ | grep parallelbuild.*.log | wc -l` && errc=`ls ${WPath}/${Branch}/src_ne/ | grep "parallelbuild.*.err" | wc -l` && if [[ -d "${WPath}/${Branch}/tar_ne" &&  $errc -eq 0 ]]; then  echo "Build Artifacts Generated" && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGS}/ && exit 0; else mkdir ${LOGSERR} && cp ${WPath}/${Branch}/src_ne/parallelbuild.*.err ${LOGSERR}/; if [ $lcount -gt 0 ]; then cp ${WPath}/${Branch}/src_ne/parallelbuild.*.log ${LOGSERR}/; else cp ${LOGS}/BuildLog.txt ${LOGSERR}/BuildLog.log; fi; exit 1; fi'
 	build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_compilation_end_time'), string(name: 'CLs', value: "${ChangeList}")]
