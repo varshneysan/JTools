@@ -42,7 +42,7 @@ node ("${Host}"){
         sh 'sh get_p4_ws.sh ${Branch}'
         sh 'if [ -d ${LOGSERR} ]; then rm -rf ${LOGSERR}; fi'
         sh 'if [ ! -d ${LOGS} ]; then mkdir -p ${LOGS};fi;'
-        sh 'p4 -u bangbuild -P ${P4PASSWD} -c ${P4CLIENT} sync $DepotPath/etc2.0/... > ${LOGS}/IQNOS_Sync.log 2>&1'
+        sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c ${P4CLIENT} sync $DepotPath/etc2.0/... > ${LOGS}/IQNOS_Sync.log 2>&1'
 		echo "INFO : P4CLIENT -  ${P4CLIENT}"
 		echo "INFO : LOGS     -  ${LOGS}"
 		echo "INFO : LOGSERR  -  ${LOGSERR}"
@@ -70,20 +70,20 @@ node ("${Host}"){
            subject: 'pre-iSubmit - Initial stage issue. Please take a look.',
            body: "Hi, Looks like Initial Stage issue for OSubmit job for URL : ${env.BUILD_URL}. This need your attention immediately. Logs are available at ${LOGS}" )
 		currentBuild.description = " ${Branch} CLs : ${ChangeList}"
-        sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-        sh 'p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+        sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c $P4CLIENT revert //...'
+        sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} client -d $P4CLIENT'
 		sh 'exit 1'
     }
     
 	try {
 		stage('UnShelving') {
 			echo "All CL to unshelve"
-			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} unshelve -s $cl; done'
-			sh 'p4 -u bangbuild -P ${P4PASSWD} update $DepotPath/... '
-			sh 'for f in `${WORKSPACE}/get_component_path.sh ${ChangeList}`; do if [ ${f} ]; then p4 -u bangbuild -P ${P4PASSWD} update ${f}...; fi;done'
-			sh 'p4 -u bangbuild -P ${P4PASSWD} resolve -am'
-			sh 'p4 -u bangbuild -P ${P4PASSWD} opened'
-			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
+			sh 'CLs=`echo "${ChangeList}" | tr "," " "`; for cl in $CLs; do p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} unshelve -s $cl; done'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} update $DepotPath/... '
+			sh 'for f in `${WORKSPACE}/get_component_path.sh ${ChangeList}`; do if [ ${f} ]; then p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} update ${f}...; fi;done'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} resolve -am'
+			sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} opened'
+			sh 'clist=`p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} resolve -n | wc -l`; if [ $clist -gt 0 ]; then exit 1; fi'
 			build job: 'UpdateTimeStamp', parameters: [string(name: 'field', value: 'preiSubmit_unshelving_end_time'), string(name: 'CLs', value: "${ChangeList}")]	
 		} 
 	} catch (Exception e) {
@@ -94,8 +94,8 @@ node ("${Host}"){
 			subject: "pre-iSubmit : Change# ${ChangeList} is rejected due code conflict.",
 			body: "Your Changelists ${ChangeList} got rejected due to code conflict. Pls refer ${env.BUILD_URL} for more info. You have to re-submit your change after resolving the conflicts" )
 		currentBuild.description = "${Branch} CLs : ${ChangeList}"
-		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c $P4CLIENT revert //...'
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} client -d $P4CLIENT'
 		sh 'exit 1'
 	}
 	
@@ -127,8 +127,8 @@ node ("${Host}"){
 			body: "Your Changelists ${ChangeList} got rejected due to compilation error. Pls referr ${env.BUILD_URL} for more info. You also can download the Error logs from the same URL." )
 		
 		currentBuild.description = "${Branch} CLs : ${ChangeList}"
-		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c $P4CLIENT revert //...'
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} client -d $P4CLIENT'
 		sh 'exit 1'
         
     }
@@ -169,8 +169,8 @@ node ("${Host}"){
     }
     
     stage ('CleanUp WS') {
-		sh 'p4 -u bangbuild -P ${P4PASSWD} -c $P4CLIENT revert //...'
-		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} client -d $P4CLIENT'
+		sh 'p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} -c $P4CLIENT revert //...'
+		sh 'rm -rf ${WPath}/* ${LOGSERR};p4 -u bangbuild -P ${P4PASSWD} -p ${P4PORT} client -d $P4CLIENT'
 		
 		sh 'find ${LOGS} -mtime +2 | xargs rm -rf'
 		build job: 'UpdateBoxState', parameters: [string(name: 'BuildBox', value: "${Host}"), string(name: 'InUsed', value: 'NO')], wait: false
