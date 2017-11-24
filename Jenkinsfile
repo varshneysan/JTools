@@ -14,7 +14,8 @@ node ("${Host}"){
 	if (env.Host ==~ /IN-.*/ || env.Host ==~ /in-.*/) {
         env.WPath="/home/bangbuild/CLVERI/workspace"
 		env.LOGS="/home/bangbuild/CLVERI/LOGS/${BUILD_NUMBER}/"
-		env.P4PORT='bangperforce:1667'
+		//env.P4PORT='bangperforce:1667'
+		env.P4PORT='indperforce:1666'
 		env.P4PASSWD="BD09EFDFEEA034D237ADE61B256006A9"
 	}
 	if (env.Host ==~ /sv-.*/) {
