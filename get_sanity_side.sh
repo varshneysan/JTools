@@ -69,3 +69,4 @@ if [ $IND_QUEUE -ge $SV_QUEUE ]; then
 elif [ $IND_QUEUE -lt $SV_QUEUE ]; then  
    echo IND
 fi
+fi
